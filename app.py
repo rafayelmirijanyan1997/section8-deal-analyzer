@@ -1,19 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import streamlit as st
 import pandas as pd
 from core.analysis import analyze_properties
@@ -42,11 +27,13 @@ st.sidebar.subheader("Filters")
 max_price = st.sidebar.number_input("Max price ($)", value=100000)
 min_beds = st.sidebar.number_input("Min bedrooms", min_value=1, max_value=10, value=2)
 target_states = st.sidebar.text_input("Target states (comma-separated, e.g. OH,MI,IN)", value="OH,MI,IN")
-
 if uploaded_file is not None:
+    import pandas as pd
+
+    # 1. Read original Zillow CSV as-is
     raw_df = pd.read_csv(uploaded_file)
 
-    # 🔁 Map Zillow columns → internal columns used by analysis.py
+    # 2. Rename Zillow columns → internal names used in analysis.py
     df = raw_df.rename(columns={
         "Price": "price",
         "Beds": "bedrooms",
@@ -55,23 +42,26 @@ if uploaded_file is not None:
         "State": "state",
         "Zipcode": "zip",
         "Detail URL": "url",
+        # Optional: if you want Rent Zestimate as a backup later
+        "Rent Zestimate": "rent_zestimate",
     }).copy()
 
-    # Convert price/bedrooms to numeric just in case
+    # 3. Clean / convert types
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
     df["bedrooms"] = pd.to_numeric(df["bedrooms"], errors="coerce")
+    df["zip"] = df["zip"].astype(str)
 
-    # Drop rows with missing essentials
+    # Drop anything missing core fields
     df = df.dropna(subset=["price", "bedrooms", "state", "zip", "address"])
 
-    # 🧮 If you don’t have taxes / insurance in the CSV, estimate them:
-    # e.g., tax = 1.5% of price per year, insurance = 0.5% of price per year
-    df["tax_annual"] = df["price"] * 0.015
-    df["insurance_annual"] = df["price"] * 0.005
+    # 4. Add estimated fields (since Zillow CSV doesn’t have them)
+    #    You can tune these formulas later
+    df["tax_annual"] = df["price"] * 0.015        # 1.5% of price per year
+    df["insurance_annual"] = df["price"] * 0.005  # 0.5% of price per year
     df["hoa_monthly"] = 0.0
-    df["repairs_estimate"] = df["price"] * 0.05  # 5% of price as initial rehab, adjust as you like
+    df["repairs_estimate"] = df["price"] * 0.05   # 5% rehab
 
-    # 🎯 Apply your filters *before* calling analyze_properties
+    # 5. Apply filters on the RENAMED df, not raw_df
     state_list = [s.strip().upper() for s in target_states.split(",") if s.strip()]
     filtered_df = df[
         (df["price"] <= max_price) &
@@ -96,27 +86,22 @@ if uploaded_file is not None:
         if result_df.empty:
             st.warning("No deals analyzed — check filters or HUD results.")
         else:
-            # Sort by best monthly cash flow
             result_df = result_df.sort_values(by="monthly_cash_flow", ascending=False)
 
             st.subheader("Top Deals")
             st.dataframe(
                 result_df[[
                     "address", "city", "state", "zip", "price",
-                    "beds", "fmr_rent", "monthly_cash_flow",
+                    "beds", "hud_rent", "monthly_cash_flow",
                     "cash_on_cash", "cap_rate"
                 ]]
             )
 
-            # Detail view: select a property
             st.subheader("Deal Details")
             options = result_df["address"].tolist()
             selected_address = st.selectbox("Select a property", options)
 
             selected_row = result_df[result_df["address"] == selected_address].iloc[0]
-
-
-
             st.write(selected_row.to_frame().rename(columns={0: "Value"}))
 else:
-    st.info("Upload a CSV with columns: address, city, state, zip, price, bedrooms, tax_annual, insurance_annual, hoa_monthly, repairs_estimate, url.")
+    st.info("Upload a Zillow CSV with at least: Price, Beds, Address, City, State, Zipcode, Detail URL.")
