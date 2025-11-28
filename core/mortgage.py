@@ -1,8 +1,25 @@
-def monthly_mortgage(principal, interest_rate, years=30):
-    r = interest_rate / 12
-    n = years * 12
-    payment = (principal * r * (1 + r)**n) / ((1 + r)**n - 1)
-    return payment
+import math
 
-def total_monthly_cost(mortgage, taxes=200, insurance=120, maintenance=150):
-    return mortgage + taxes + insurance + maintenance
+def monthly_payment(principal: float, annual_rate: float, years: int) -> float:
+    r = annual_rate / 100 / 12
+    n = years * 12
+    if r == 0:
+        return principal / n
+    return principal * (r * (1 + r) ** n) / ((1 + r) ** n - 1)
+
+def estimate_monthly_expenses(
+    annual_tax: float,
+    annual_insurance: float,
+    hoa_monthly: float,
+    maintenance_pct: float,
+    management_pct: float,
+    rent: float,
+) -> float:
+    """
+    maintenance_pct and management_pct are percentages of rent (e.g. 10 for 10%).
+    """
+    monthly_tax = annual_tax / 12
+    monthly_ins = annual_insurance / 12
+    maintenance = rent * (maintenance_pct / 100)
+    management = rent * (management_pct / 100)
+    return monthly_tax + monthly_ins + hoa_monthly + maintenance + management
