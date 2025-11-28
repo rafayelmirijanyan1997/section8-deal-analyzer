@@ -1,3 +1,19 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import streamlit as st
 import pandas as pd
 from core.analysis import analyze_properties
@@ -30,15 +46,40 @@ target_states = st.sidebar.text_input("Target states (comma-separated, e.g. OH,M
 if uploaded_file is not None:
     raw_df = pd.read_csv(uploaded_file)
 
-    # Filter before analysis to reduce HUD calls
+    # 🔁 Map Zillow columns → internal columns used by analysis.py
+    df = raw_df.rename(columns={
+        "Price": "price",
+        "Beds": "bedrooms",
+        "Address": "address",
+        "City": "city",
+        "State": "state",
+        "Zipcode": "zip",
+        "Detail URL": "url",
+    }).copy()
+
+    # Convert price/bedrooms to numeric just in case
+    df["price"] = pd.to_numeric(df["price"], errors="coerce")
+    df["bedrooms"] = pd.to_numeric(df["bedrooms"], errors="coerce")
+
+    # Drop rows with missing essentials
+    df = df.dropna(subset=["price", "bedrooms", "state", "zip", "address"])
+
+    # 🧮 If you don’t have taxes / insurance in the CSV, estimate them:
+    # e.g., tax = 1.5% of price per year, insurance = 0.5% of price per year
+    df["tax_annual"] = df["price"] * 0.015
+    df["insurance_annual"] = df["price"] * 0.005
+    df["hoa_monthly"] = 0.0
+    df["repairs_estimate"] = df["price"] * 0.05  # 5% of price as initial rehab, adjust as you like
+
+    # 🎯 Apply your filters *before* calling analyze_properties
     state_list = [s.strip().upper() for s in target_states.split(",") if s.strip()]
-    filtered_df = raw_df[
-        (raw_df["price"] <= max_price) &
-        (raw_df["bedrooms"] >= min_beds) &
-        (raw_df["state"].str.upper().isin(state_list))
+    filtered_df = df[
+        (df["price"] <= max_price) &
+        (df["bedrooms"] >= min_beds) &
+        (df["state"].str.upper().isin(state_list))
     ]
 
-    st.write(f"Loaded {len(raw_df)} listings, {len(filtered_df)} after filters.")
+    st.write(f"Loaded {len(df)} cleaned listings, {len(filtered_df)} after filters.")
 
     if st.button("Run Analysis"):
         assumptions = {
@@ -73,6 +114,9 @@ if uploaded_file is not None:
             selected_address = st.selectbox("Select a property", options)
 
             selected_row = result_df[result_df["address"] == selected_address].iloc[0]
+
+
+
             st.write(selected_row.to_frame().rename(columns={0: "Value"}))
 else:
     st.info("Upload a CSV with columns: address, city, state, zip, price, bedrooms, tax_annual, insurance_annual, hoa_monthly, repairs_estimate, url.")
