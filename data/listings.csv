@@ -1,0 +1,11 @@
+address,city,state,zip,price,bedrooms,tax_annual,insurance_annual,hoa_monthly,repairs_estimate,url
+123 Maple St,Detroit,MI,48205,62000,3,1800,900,0,4000,https://www.zillow.com/homedetails/1
+55 Oakview Dr,Cleveland,OH,44108,78000,3,1600,850,0,3500,https://www.zillow.com/homedetails/2
+902 Pine Ave,Indianapolis,IN,46218,89000,2,2100,1020,0,5000,https://www.zillow.com/homedetails/3
+14 Birchwood Ln,Toledo,OH,43605,54000,2,1500,780,0,3000,https://www.zillow.com/homedetails/4
+2337 Cedar Ct,St Louis,MO,63136,69000,3,1700,880,0,3500,https://www.zillow.com/homedetails/5
+789 Grover St,Birmingham,AL,35215,82000,3,1300,760,0,4500,https://www.zillow.com/homedetails/6
+4430 Spring St,Memphis,TN,38127,59000,3,1400,720,0,3000,https://www.zillow.com/homedetails/7
+810 Meadowview Rd,Kansas City,MO,64128,97000,4,2400,1100,0,6000,https://www.zillow.com/homedetails/8
+129 Hillcrest Ave,Dayton,OH,45406,63000,2,1500,780,0,3500,https://www.zillow.com/homedetails/9
+200 Walnut Dr,Flint,MI,48504,48000,3,1200,650,0,2500,https://www.zillow.com/homedetails/10
